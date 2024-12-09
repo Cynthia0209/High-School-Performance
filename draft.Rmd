@@ -419,7 +419,7 @@ different schools.
 ### Final Thoughts
 
 In conclusion, although our model provides statistical significant
-results for all four predictors, the low $R^2$ value of 0.289 suggests
+results for all four predictors, the low $R^2$ value of 0.259 suggests
 that there might be other predictor variables influencing
 log(G1_G2_Average) that are not captured in our analysis. Further
 exploration and analysis of the predictor variables in the future may

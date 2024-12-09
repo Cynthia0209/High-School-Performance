@@ -413,12 +413,11 @@ of linear regression. Therefore we applied a log transformation of the
 predictor variable, resulting in a better fitted model as seen in Figure
 7 as the assumptions of linear regression are met.
 
-From this model, we got an adjusted $R^2$ value of 0.289, meaning that
-our model explains 28.9% of the variance in log of (G1_G2_Average).
-Additionally, this adjusted $R^2$ value did improve by 4.6%, however the
-$R^2$ value our model achieve is not that high indicating that the
-relationship between target and predictor might not have a log-linear
-relationship between them.
+From this model, we got an $R^2$ value of 0.259, meaning that our model 
+explains 25.9% of the variance in log of (G1_G2_Average). Additionally, 
+this $R^2$ value did not improve, and the $R^2$ value our model achieve 
+is not that high indicating that the relationship between target and 
+predictor might not have a log-linear relationship between them.
 
 ### Statistical Significance of Predictors
 
@@ -426,17 +425,17 @@ The summary of our model shows that all four variables are statistically
 significant at a critical value of 0.05, indicating to us that these
 four variables have a meaningful relationship with G1_G2_Average.
 Specifically, \* schoolMS has a negative correlation with
-log(G1_G2_Average) with estimate -1.54. This implies that being in
+log(G1_G2_Average) with estimate -1.42. This implies that being in
 school MS (Mousinho da Silveira) as compared to school GP (Gabriel
-Pereira) is associated with a decrease in log(G1_G2_Average) by 1.54
+Pereira) is associated with a decrease in log(G1_G2_Average) by 1.42
 when other variables are constant \* Medu has a positive correlation of
-0.257, implying that for a unit increase in Mother's educational level,
-the log(G1_G2_Average) increases by 0.257 units. \* higherYes has a
-positive correlation of 2.47, implying that an increase in 2.47 units in
+0.215, implying that for a unit increase in Mother's educational level,
+the log(G1_G2_Average) increases by 0.215 units. \* higherYes has a
+positive correlation of 2.41, implying that an increase in 2.41 units in
 log(G1_G2_Average) is observed for students planning to pursue a degree
 compared to those who are not interested. \* absences has a negative
-correlation of 0.108, implying that every additional day of absences is
-associated with a decrease in log(G1_G2_Average) by 0.108 units.
+correlation of 0.131, implying that every additional day of absences is
+associated with a decrease in log(G1_G2_Average) by 0.131 units.
 
 ### Implications
 

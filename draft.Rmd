@@ -1,0 +1,483 @@
+---
+title: "R Notebook"
+output:
+  html_notebook: default
+  pdf_document: default
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Group Report
+
+Members: Tracy Gan, Zihua Li, Xinya Lu, Matilda Lucas
+
+## I. Introduction
+
+Education serves as a cornerstone for societal development, with
+academic performance often reflecting both individual and systemic
+success. This study explores the extent to which social and educational
+factors influence student achievement, drawing on data from two
+Portuguese secondary schools during the 2005--2006 academic year. The
+dataset incorporates diverse variables, including parental education
+levels, aspirations for higher education, and absences, alongside
+demographic and school-related factors. By examining these elements, the
+research aims to uncover key contributors to academic performance and
+offer actionable insights for improving educational outcomes (Cortez &
+Silva, 2008).
+
+The broader context highlights the persistent challenges faced by
+students in lower socioeconomic households, where access to resources
+and parental involvement often differ significantly from their higher
+socioeconomic status counterparts. For instance, previous studies
+underscore the importance of early educational exposure, the quality of
+home learning environments, and access to extracurricular activities as
+critical components for academic success (Milne, 2005). Factors such as
+parental education, the presence of role models, and emotional support
+further differentiate students' abilities to thrive academically, even
+within economically constrained households (Milne, 2005).
+
+Motivated by these findings, this report investigates whether specific
+social and educational variables significantly influence academic
+performance. Using statistical techniques, including hypothesis testing
+and logistic regression, the study seeks to quantify these relationships
+and evaluate their impact. Ultimately, this research contributes to a
+deeper understanding of how systemic and familial dynamics shape
+educational achievement, with the aim of identifying interventions that
+can enhance equity and access in education.
+
+## II. Analysis
+
+### A. Exploratory data analysis
+
+```{r include = FALSE}
+echo=FALSE #load all the libraries 
+install.packages("leaps") 
+library(car) 
+library(ggplot2) 
+library(reshape2) 
+library(tidyverse) 
+library(broom) 
+library(caret) 
+library(RColorBrewer) 
+library(leaps) 
+required_packages <- c("rmarkdown", "knitr", "evaluate")
+install.packages(required_packages)
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+
+```
+
+In our analysis, we aim to model student performance as the response
+variable. The initial dataset includes performance scores from two
+periods, G1 and G2. However, some students have a score of zero in one
+of these periods, indicating they were absent. To ensure the accuracy of
+our analysis, we created a new variable, G1_G2_Average, which represents
+the average performance across both periods. We also removed data for
+students who were absent in one period, as their absences should not
+influence the measure of student performance.
+
+```{r echo = FALSE, fig.cap = "Table 1. Preview of the High School Alcoholism and Academic Performance dataset.\n"}
+# load the dataset
+data <- read.csv("dataset.csv")
+head(data, 3)
+#cat("Table 1. Preview of the High School Alcoholism and Academic Performance dataset.\n")
+```
+
+```{r echo = FALSE, fig.cap = "Table 2. Preview of the cleaned High School Alcoholism and Academic Performance dataset.\n"}
+# clean the dataset, and store the clean dataset
+missing_summary <- sapply(data, function(x) sum(is.na(x)))
+data[is.na(data)] <- lapply(data[is.na(data)], function(x) ifelse(is.numeric(x), median(x, na.rm = TRUE), "unknown"))
+                            
+# Add a new column 'G1_G2_Average' that is the average of G1 and G2
+data$G1_G2_Average <- rowMeans(data[c("G1", "G2")], na.rm = TRUE)
+
+# Remove rows where either G1 or G2 is equal to 0
+data <- subset(data, G1 != 0 & G2 != 0)
+head(data)
+#cat("Table 2. Preview of the cleaned High School Alcoholism and Academic Performance dataset.\n")
+```
+
+```{r echo = FALSE, fig.cap = "Figure 1. Distribution of average of G1 and G2.\n"}
+# Distribution histogram of the Average of G1 and G2
+hist <- ggplot(data, aes(x = G1_G2_Average)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of average of G1 and G2", x = "Average", y = "Count") +
+  theme_minimal()
+hist
+#cat("Figure 1. Distribution of average of G1 and G2.\n")
+```
+
+Figure 1 illustrates how the average grades are continuously
+distributed. We can see most grades concentrated around the center and
+there is no outliers or invalid data after we clean our dataset.
+
+```{r include = FALSE}
+full_model <- lm(G1_G2_Average ~ .-G1-G2, data = data)
+summary(full_model)
+```
+
+```{r echo = FALSE, fig.cap="\nFigure 2. Correlation heatmap.\n" }
+#setup the covariance matrix
+cor_matrix <- cor(data[, sapply(data, is.numeric)], use = "complete.obs")
+#print(cor_matrix)
+cor_data <- melt(cor_matrix)
+ggplot(cor_data, aes(Var1, Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1, 1), space = "Lab", 
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  coord_fixed() +
+  labs(title = "Correlation Heatmap", x = "", y = "")
+#cat("\nFigure 2. Correlation heatmap.\n")
+```
+
+Figure 2 uses a color gradient to represent the strength and direction
+of correlations. We can see Medu, Fedu, and studytime might has a
+stronger correlation with G1_G2_Average.
+
+```{r echo = FALSE, fig.cap = "\nFigure 3. Residual plot for full model.\n"}
+# residual plot again fitted values for full model
+plot(full_model$fitted.values, residuals(full_model),
+     xlab = "Fitted Values",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted")
+abline(h = 0, col = "red", lty = 2)
+#cat("\nFigure 3. Residual plot for full model.\n")
+```
+
+Based on Figure 3, the assumption of constant variance might be
+violated, as the plot appears to have a funnel-shaped pattern.
+
+```{r echo = FALSE, fig.cap = "\nFigure 4. Q-Q plot for full model.\n"}
+# QQ-plot for full model
+qqnorm(residuals(full_model))
+qqline(residuals(full_model), col = "red")
+#cat("\nFigure 4. Q-Q plot for full model.\n")
+```
+
+Based on Figure 4, the residuals of the full model appear to follow a
+normal distribution.
+
+```{r include = FALSE}
+# get the VIF values
+vif_values <- vif(full_model)
+print(vif_values)
+```
+
+VIF quantifies how much multicollinearity inflates the variance of a
+regression coefficient. From the calculated VIF values, no variable
+exceeds a value of 5, suggesting that multicollinearity is unlikely to
+be a concern in the model.
+
+```{r include = FALSE}
+#split data
+set.seed(20)
+data <- 
+    data %>% 
+    mutate(id = row_number())
+
+training_data <- 
+    data %>% 
+    slice_sample(prop = 0.70, replace = FALSE)
+
+testing_data <- 
+    data %>%
+    anti_join(training_data, by = "id") %>%
+    select(-"id")
+
+training_data <- 
+    training_data %>% 
+    select(-"id")
+```
+
+To select the most appropriate covariates for our model, we will perform
+backward selection. First, we will split the data into a training set
+and a testing set. The training set will be used for the backward
+selection process, while the testing set will be used to build and
+evaluate the final model.
+
+```{r echo = FALSE}
+#backward selection to choose the covariates
+your_backward_sel <- regsubsets(
+  x = G1_G2_Average ~ .-G1-G2,  
+  nvmax = 4,       
+  data = training_data,         
+  method = "backward"          
+)
+
+#your_backward_sel
+
+your_bwd_summary <- summary(your_backward_sel)
+
+your_bwd_summary_df <- tibble(
+  n_input_variables = 1:4,          
+  R2 = your_bwd_summary$rsq,
+  RSS = your_bwd_summary$rss,
+  ADJ.R2 = your_bwd_summary$adjr2,
+  BIC = your_bwd_summary$bic,
+  Cp = your_bwd_summary$cp
+)
+
+your_bwd_summary_df
+#your_bwd_summary
+```
+
+Selecting a maximum of 4 variables ensures that the final model remains
+interpretable and avoids unnecessary complexity, making it easier to
+explain and derive actionable insights. Additionally, limiting the
+number of predictors helps reduce the risk of overfitting.
+
+Based on the result of backward selection, we will use student's school
+(school), mother's education level (Medu) , individual desire to purse a
+degree or not (higher), and number of school absences (absence) as our
+explantory variables
+
+```{r include = FALSE}
+# linear model with no transformation
+model <- lm(G1_G2_Average ~ school + Medu + higher + absences, data = testing_data)
+summary(model)
+```
+
+Then we create a linear model between the avarage student performance
+and the four covariates that we choose.
+
+```{r echo = FALSE, fig.cap = "\nFigure 5. Q-Q plot for actual model.\n"}
+qqnorm(residuals(model))
+qqline(residuals(model), col = "red")
+#cat("\nFigure 5. Q-Q plot for actual model.\n")
+```
+
+Based on Figure 5, the residuals of our actual model appear to generally
+follow a normal distribution, although the tail on right is slightly
+off.
+
+```{r echo = FALSE, fig.cap ="\nFigure 6. Residual plot for actual model.\n" }
+plot(model$fitted.values, residuals(model), 
+     xlab = "Fitted Values", 
+     ylab = "Residuals", 
+     main = "Residual Plot")
+abline(h = 0, col = "red", lty = 2)
+#cat("\nFigure 6. Residual plot for actual model.\n")
+```
+
+Based on Figure 6, the residual plot for the fitted model indicates that
+the constant variance assumption is likely violated. To address this
+issue, we decided to apply a log transformation to the fitted values.
+
+```{r include = FALSE}
+# linear model with log transformation
+model2 <- lm(log(G1_G2_Average) ~ school + Medu + higher + absences, data = testing_data)
+summary(model)
+```
+
+```{r echo = FALSE, fig.cap ="\nFigure 7. Q-Q plot for log-transformed model.\n" }
+qqnorm(residuals(model2))
+qqline(residuals(model2), col = "red")
+#cat("\nFigure 7. Q-Q plot for log-transformed model.\n")
+```
+
+```{r echo = FALSE, fig.cap ="\nFigure 8. Residual plot for log-transformed model.\n" }
+plot(model2$fitted.values, residuals(model2), 
+     xlab = "Fitted Values", 
+     ylab = "Residuals", 
+     main = "Residual Plot")
+abline(h = 0, col = "red", lty = 2)
+#cat("\nFigure 8. Residual plot for log-transformed model.\n")
+```
+
+After applying the log transformation to the model, the model fit
+improved significantly. The new residual plot shows that the residuals
+are more randomly scattered around the zero line, indicating a better
+fit.
+
+## III. Model Inference
+
+In order to investigate the relationship between student performance
+scores (G1_G2_Average) and the variables of interest, hypothesis testing
+was conducted using logistic regression models and confidence intervals
+were evaluated. The objective of this study was to analyze the effect of
+the following variables on student performance:
+
+-   School
+-   Medu
+-   Higher
+-   Absences
+
+#### Hypothesis Testing
+
+For each variable, we set the following hypotheses: $$
+\begin{aligned}
+H_0 &: \beta_j = 0 \\
+H_a &: \beta_j \neq 0
+\end{aligned}
+$$
+
+where $j = 1, 2, 3, 4$.
+
+The equation of model is given by $$
+y = \beta_0 + \beta_1 X_{schoolMS} + \beta_2 X_{Medu} + \beta_3 X_{higheryes} + \beta_4 X_{absences}
+$$
+
+The Wald's statistic $z_j$ is given by the formula:
+
+$$
+z_j = \frac{\hat{\beta}_j}{SE(\hat{\beta}_j)}
+$$
+
+Here, we perform hypothesis testing and interpret the p-values for each
+predictor variable (School, Medu, Higher, and Absences) to evaluate
+their significance in association with the student performance scores.
+The code is adapted to include confidence intervals for a more
+comprehensive understanding of the results.
+
+```{r echo = FALSE}
+results <- model %>%
+  tidy(conf.int = TRUE)
+print(results)
+```
+
+### Results
+
+#### Coefficient Significance $(α = 0.05)$ / Confidence Intervals $(95\%)$
+
+-   **Intercept**: \$\beta\_0\$ ( \[8.23, 10.9\] )
+
+    We reject $H_0$ since the $p-value$ is $8.33 \times 10^{-32}$. This
+    indicates that the intercept is statistically significant,
+    suggesting that the baseline levels of the predictors have a
+    meaningful contribution to the average student performance.
+
+    Besides that we are 95% confident that the true value of the
+    intercept lies within $[8.23, 10.9]$. Since the range is entirely >
+    1, it also suggests that the baseline group is associated with
+    higher levels of student performance compared to other predictor
+    categories.
+
+-   **School**: \$\beta\_1\$ ( \[-2.09, -0.741\] )
+
+    The $p-value$ $5.35 \times 10^{-5}$ is less than $0.05$, so we
+    reject $H_0$. This result indicates that the type of school is
+    significantly associated with average student performance.
+
+    The confidence interval for School lies entirely below 0, which
+    shows the same result.
+
+-   **Medu**: \$\beta\_2\$ ( \[-0.0659, 0.496\] )
+
+    The $p-value$ $1.33 \times 10^{-1}$ is greater than $0.05$, so we
+    fail to reject $H_0$. There is insufficient evidence to conclude
+    that mother's education level is significantly associated with
+    average student performance.
+
+    The confidence interval includes 0, also indicates no significant
+    evidence to conclude a relationship between mother's education level
+    (Medu) and higher student performance.
+
+-   **Higher**: \$\beta\_3\$ ( \[1.33, 3.48\] )
+
+    The $p-value$ $1.82 \times 10^{-5}$ is less than $0.05$, so we
+    reject $H_0$. This suggests that planning to pursue higher education
+    is significantly associated with improved average student
+    performance.
+
+    We can see the range $[1.33, 3.48]$ lies entirely > 1, also suggests
+    a significant positive relationship between planning to pursue
+    higher education degree and better student performance.
+
+-   **Absences**: \$\beta\_4\$ ( \[-0.199, -0.0629\] )
+
+    The $p-value$ $2.01 \times 10^{-4}$ is less than $0.05$, so we
+    reject $H_0$. This indicates that absences are significantly
+    associated with lower average student performance.
+
+    The confidence interval lies entirely below 0, also suggests a
+    significant negative association between the number of absences and
+    higher student performance.
+
+## IV. Conclusion
+
+The objective of this analysis was to build an inferential model to
+investigate whether social and educational factors influence academic
+performance, specifically the variable G1_G2_Average which represents
+the average academic performance of a student across both periods. Our
+results from performing backward selection suggests that the student's
+school (school), mother's education level (Medu), individual desire to
+purse a degree or not (higher), and number of school absences (absence)
+were important in influencing the students' academic performance.
+
+### Model fit
+
+From the linear model fitted with these variables, we can see the plot
+of these models in Figure 6 showed us that our model is not an
+appropriate fit. The plot showed presence of heteroscedasticity as there
+is fan-shaped pattern, violating a key assumption of constant variance
+of linear regression. Therefore we applied a log transformation of the
+predictor variable, resulting in a better fitted model as seen in Figure
+7 as the assumptions of linear regression are met.
+
+From this model, we got an adjusted $R^2$ value of 0.289, meaning that
+our model explains 28.9% of the variance in log of (G1_G2_Average).
+Additionally, this adjusted $R^2$ value did improve by 4.6%, however the
+$R^2$ value our model achieve is not that high indicating that the
+relationship between target and predictor might not have a log-linear
+relationship between them.
+
+### Statistical Significance of Predictors
+
+The summary of our model shows that all four variables are statistically
+significant at a critical value of 0.05, indicating to us that these
+four variables have a meaningful relationship with G1_G2_Average.
+Specifically, \* schoolMS has a negative correlation with
+log(G1_G2_Average) with estimate -1.54. This implies that being in
+school MS (Mousinho da Silveira) as compared to school GP (Gabriel
+Pereira) is associated with a decrease in log(G1_G2_Average) by 1.54
+when other variables are constant \* Medu has a positive correlation of
+0.257, implying that for a unit increase in Mother's educational level,
+the log(G1_G2_Average) increases by 0.257 units. \* higherYes has a
+positive correlation of 2.47, implying that an increase in 2.47 units in
+log(G1_G2_Average) is observed for students planning to pursue a degree
+compared to those who are not interested. \* absences has a negative
+correlation of 0.108, implying that every additional day of absences is
+associated with a decrease in log(G1_G2_Average) by 0.108 units.
+
+### Implications
+
+The findings from above suggests that higher maternal education and
+desire to pursue a degree are associated with a higher G1_G2_Average,
+meaning higher academic average performance of students, whilst
+increasing number of absences are associated with lower academic average
+of students. As school type also has a negative impact on the academic
+average, this points to a difference in outcomes of students in these
+different schools.
+
+### Final Thoughts
+
+In conclusion, although our model provides statistical significant
+results for all four predictors, the low $R^2$ value of 0.289 suggests
+that there might be other predictor variables influencing
+log(G1_G2_Average) that are not captured in our analysis. Further
+exploration and analysis of the predictor variables in the future may
+help with defining these relationships.
+
+## IV. Appendix
+
+```{r}
+null_model <- lm(G1_G2_Average ~ 1, data = testing_data)
+selected_model <- lm(G1_G2_Average ~ school + Medu + higher + absences, data = testing_data)
+```
+
+```{r}
+AIC(null_model, selected_model)
+```
+
+### References
+
+Cortez, P., & Silva, A. M. G. (2008, April). Using data mining to
+predict secondary school student performance.
+<https://repositorium.sdum.uminho.pt/handle/1822/8024>
+
+Milne, A. (2005). Factors of a Low-SES Household: What Aids Academic
+Achievement. All Graduate Projects.
+<https://digitalcommons.cwu.edu/graduate_projects/878>

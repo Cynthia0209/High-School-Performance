@@ -1,14 +1,12 @@
 ---
-title: "R Notebook"
+title: " Group Report"
 output:
-  html_notebook: default
   pdf_document: default
+  html_notebook: default
 editor_options: 
   markdown: 
     wrap: 72
 ---
-
-# Group Report
 
 Members: Tracy Gan, Zihua Li, Xinya Lu, Matilda Lucas
 
@@ -51,8 +49,6 @@ can enhance equity and access in education.
 ### A. Exploratory data analysis
 
 ```{r include = FALSE}
-echo=FALSE #load all the libraries 
-install.packages("leaps") 
 library(car) 
 library(ggplot2) 
 library(reshape2) 
@@ -61,9 +57,9 @@ library(broom)
 library(caret) 
 library(RColorBrewer) 
 library(leaps) 
-required_packages <- c("rmarkdown", "knitr", "evaluate")
-install.packages(required_packages)
-options(repos = c(CRAN = "https://cran.rstudio.com/"))
+library(rmarkdown)
+library(knitr)
+library(evaluate)
 
 ```
 
@@ -76,11 +72,11 @@ the average performance across both periods. We also removed data for
 students who were absent in one period, as their absences should not
 influence the measure of student performance.
 
-```{r echo = FALSE, fig.cap = "Table 1. Preview of the High School Alcoholism and Academic Performance dataset.\n"}
+```{r include= FALSE}
 # load the dataset
 data <- read.csv("dataset.csv")
-head(data, 3)
-#cat("Table 1. Preview of the High School Alcoholism and Academic Performance dataset.\n")
+head(data, 1)
+cat("Table 1. Preview of the High School Alcoholism and Academic Performance dataset.\n")
 ```
 
 ```{r echo = FALSE, fig.cap = "Table 2. Preview of the cleaned High School Alcoholism and Academic Performance dataset.\n"}
@@ -93,11 +89,11 @@ data$G1_G2_Average <- rowMeans(data[c("G1", "G2")], na.rm = TRUE)
 
 # Remove rows where either G1 or G2 is equal to 0
 data <- subset(data, G1 != 0 & G2 != 0)
-head(data)
-#cat("Table 2. Preview of the cleaned High School Alcoholism and Academic Performance dataset.\n")
+head(data,1)
+cat("Table 1. Preview of the cleaned High School Alcoholism and Academic Performance dataset.\n")
 ```
 
-```{r echo = FALSE, fig.cap = "Figure 1. Distribution of average of G1 and G2.\n"}
+```{r echo = FALSE, fig.cap = "  Distribution of average of G1 and G2.\n", fig.width=4, fig.height=2}
 # Distribution histogram of the Average of G1 and G2
 hist <- ggplot(data, aes(x = G1_G2_Average)) +
   geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
@@ -116,7 +112,7 @@ full_model <- lm(G1_G2_Average ~ .-G1-G2, data = data)
 summary(full_model)
 ```
 
-```{r echo = FALSE, fig.cap="\nFigure 2. Correlation heatmap.\n" }
+```{r echo = FALSE, fig.cap="\n. Correlation heatmap.\n", fig.width=4, fig.height=4 }
 #setup the covariance matrix
 cor_matrix <- cor(data[, sapply(data, is.numeric)], use = "complete.obs")
 #print(cor_matrix)
@@ -137,7 +133,7 @@ Figure 2 uses a color gradient to represent the strength and direction
 of correlations. We can see Medu, Fedu, and studytime might has a
 stronger correlation with G1_G2_Average.
 
-```{r echo = FALSE, fig.cap = "\nFigure 3. Residual plot for full model.\n"}
+```{r echo = FALSE, fig.cap = "\n. Residual plot for full model.\n", fig.width=5, fig.height=4}
 # residual plot again fitted values for full model
 plot(full_model$fitted.values, residuals(full_model),
      xlab = "Fitted Values",
@@ -150,7 +146,7 @@ abline(h = 0, col = "red", lty = 2)
 Based on Figure 3, the assumption of constant variance might be
 violated, as the plot appears to have a funnel-shaped pattern.
 
-```{r echo = FALSE, fig.cap = "\nFigure 4. Q-Q plot for full model.\n"}
+```{r echo = FALSE, fig.cap = "\n. Q-Q plot for full model.\n", fig.width=5, fig.height=4}
 # QQ-plot for full model
 qqnorm(residuals(full_model))
 qqline(residuals(full_model), col = "red")
@@ -243,7 +239,7 @@ summary(model)
 Then we create a linear model between the avarage student performance
 and the four covariates that we choose.
 
-```{r echo = FALSE, fig.cap = "\nFigure 5. Q-Q plot for actual model.\n"}
+```{r echo = FALSE, fig.cap = "\n. Q-Q plot for actual model.\n", fig.width=5, fig.height=4}
 qqnorm(residuals(model))
 qqline(residuals(model), col = "red")
 #cat("\nFigure 5. Q-Q plot for actual model.\n")
@@ -253,7 +249,7 @@ Based on Figure 5, the residuals of our actual model appear to generally
 follow a normal distribution, although the tail on right is slightly
 off.
 
-```{r echo = FALSE, fig.cap ="\nFigure 6. Residual plot for actual model.\n" }
+```{r echo = FALSE, fig.cap ="\n. Residual plot for actual model.\n", fig.width=5, fig.height=4}
 plot(model$fitted.values, residuals(model), 
      xlab = "Fitted Values", 
      ylab = "Residuals", 
@@ -272,13 +268,13 @@ model2 <- lm(log(G1_G2_Average) ~ school + Medu + higher + absences, data = test
 summary(model)
 ```
 
-```{r echo = FALSE, fig.cap ="\nFigure 7. Q-Q plot for log-transformed model.\n" }
+```{r echo = FALSE, fig.cap ="\n. Q-Q plot for log-transformed model.\n", fig.width=5, fig.height=4 }
 qqnorm(residuals(model2))
 qqline(residuals(model2), col = "red")
 #cat("\nFigure 7. Q-Q plot for log-transformed model.\n")
 ```
 
-```{r echo = FALSE, fig.cap ="\nFigure 8. Residual plot for log-transformed model.\n" }
+```{r echo = FALSE, fig.cap ="\n. Residual plot for log-transformed model.\n", fig.width=5, fig.height=4 }
 plot(model2$fitted.values, residuals(model2), 
      xlab = "Fitted Values", 
      ylab = "Residuals", 
@@ -340,9 +336,9 @@ print(results)
 
 ### Results
 
-#### Coefficient Significance $(α = 0.05)$ / Confidence Intervals $(95\%)$
+#### Coefficient Significance ($\alpha$ = 0.05) / Confidence Intervals $(95\%)$
 
--   **Intercept**: \$\beta\_0\$ ( \[8.23, 10.9\] )
+-   **Intercept**: $\beta_0$ ( [8.23, 10.9] )
 
     We reject $H_0$ since the $p-value$ is $8.33 \times 10^{-32}$. This
     indicates that the intercept is statistically significant,
@@ -355,16 +351,16 @@ print(results)
     higher levels of student performance compared to other predictor
     categories.
 
--   **School**: \$\beta\_1\$ ( \[-2.09, -0.741\] )
+-   **School**: $\beta_1$ ( [-2.09, -0.741] )
 
-    The $p-value$ $5.35 \times 10^{-5}$ is less than $0.05$, so we
-    reject $H_0$. This result indicates that the type of school is
+    The $p-value$ $5.35 \times10^{-5}$ is less than $0.05$, so we reject
+    $H_0$. This result indicates that the type of school is
     significantly associated with average student performance.
 
     The confidence interval for School lies entirely below 0, which
     shows the same result.
 
--   **Medu**: \$\beta\_2\$ ( \[-0.0659, 0.496\] )
+-   **Medu**: $\beta_2$ ( [-0.0659, 0.496] )
 
     The $p-value$ $1.33 \times 10^{-1}$ is greater than $0.05$, so we
     fail to reject $H_0$. There is insufficient evidence to conclude
@@ -375,7 +371,7 @@ print(results)
     evidence to conclude a relationship between mother's education level
     (Medu) and higher student performance.
 
--   **Higher**: \$\beta\_3\$ ( \[1.33, 3.48\] )
+-   **Higher**: $\beta_3$ ( [1.33, 3.48] )
 
     The $p-value$ $1.82 \times 10^{-5}$ is less than $0.05$, so we
     reject $H_0$. This suggests that planning to pursue higher education
@@ -386,11 +382,11 @@ print(results)
     a significant positive relationship between planning to pursue
     higher education degree and better student performance.
 
--   **Absences**: \$\beta\_4\$ ( \[-0.199, -0.0629\] )
-
-    The $p-value$ $2.01 \times 10^{-4}$ is less than $0.05$, so we
-    reject $H_0$. This indicates that absences are significantly
-    associated with lower average student performance.
+-   **Absences**: $\beta_4$ ( [-0.199, -0.0629] )
+    
+    The $p-value$ = $2.01\times 10^{-4}$ is less than $0.05$, so we reject
+    $H_0$. This indicates that absences are significantly associated
+    with lower average student performance.
 
     The confidence interval lies entirely below 0, also suggests a
     significant negative association between the number of absences and
